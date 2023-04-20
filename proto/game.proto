@@ -1,0 +1,61 @@
+syntax = "proto3";
+package game;
+
+
+
+/***
+Service
+
+TODO: Might want to have RegisterUser return RegisterResponse, and then 
+have another unary call that loads in the initial game state.
+***/
+service Game {
+    rpc GameUpdate (PlayerAction) returns (GameState) {}
+    rpc RegisterUser (RegisterRequest) returns (GameState) {}
+}
+
+
+/*** 
+Server Messages
+***/
+message Player {
+    Cell cell = 1;
+    string username = 5;
+}
+
+message Cell {
+    int32 x_pos = 1;
+    int32 y_pos = 2;
+    float size = 3;
+    string color = 4;
+}
+
+message GameState {
+    repeated Player players = 1;
+    repeated Cell food = 2;
+    // TODO: Can add more features
+}
+
+
+/***
+Client Messages
+***/
+message PolarVector {
+    float angle = 1;
+    float length = 2;
+}
+
+enum PlayerActionType {
+    MOVE = 0;
+    SHOOT = 1;
+}
+
+message PlayerAction {
+    PolarVector mouse_pos = 1;
+    PlayerActionType action_type = 2;
+    string username = 3;
+}
+
+message RegisterRequest {
+    string username = 1;
+}
