@@ -33,6 +33,7 @@ message Cell {
 message GameState {
     repeated Player players = 1;
     repeated Cell food = 2;
+    bool alive = 3;
     // TODO: Can add more features
 }
 

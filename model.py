@@ -10,6 +10,7 @@ import math
 GAME_WINDOW_WIDTH = 1500
 GAME_WINDOW_HEIGHT = 800
 FOOD_AMOUNT = 50
+INITIAL_SPEED = 5.5
 
 
 class Cell():
@@ -46,19 +47,16 @@ class Cell():
         elif self.pos[1] > GAME_WINDOW_HEIGHT - self.radius:
             self.pos[1] = GAME_WINDOW_HEIGHT - self.radius
 
-    # def move(self):
-    #     """Move in the given direction at object's velocity."""
-    #     # Compute direction vector and add to position
-    #     dx = int(self.speed * np.cos(self.direction))
-    #     dy = int(self.speed * np.sin(self.direction))
-    #     print(dx)
-    #     print(dy)
-    #     self.pos += np.array([dx, dy])
-        
-        # # Clip the cell to the boundaries of the screen
-        # self._clip_to_bounds()
+    
+    def print_cell(self):
+        print("The cell is at position: " + str(self.pos))
 
 
+class Player(Cell):
+    def __init__(self, username, pos, radius=10, color="r", speed=INITIAL_SPEED, direction=0):
+        self.username = username
+        super().__init__(pos, radius, color, speed, direction)
+    
     def move(self, x, y):
         """Updates players current position depending on player's mouse relative position.
         """
@@ -78,25 +76,6 @@ class Cell():
 
         self._clip_to_bounds()
     
-    def print_cell(self):
-        print("The cell is at position: " + str(self.pos))
-
-
-class Player(Cell):
-    def __init__(self, username, pos, radius=10, color="r", speed=10.0, direction=0):
-        self.username = username
-        super().__init__(pos, radius, color, speed, direction)
-    
-    def update_velocity(self, angle, speed):
-        """
-        Update the velocity with a given polar vector.
-        
-        TODO: Not sure if this is sufficient, may need to fix this.
-        """
-        self.direction = angle
-        self.speed = speed
-
-
 
 class Model():
     """Represents the game state."""
@@ -105,36 +84,57 @@ class Model():
         self._food = {}
         for i in range(0,FOOD_AMOUNT):
             self.add_food(i)
-        
-    def update(self):
-        """
-        Call `move` on every player.
-        
-        TODO: Should update to handle ejections since these will move.
-        """
-        for player in self._players.values():
-            # player.move()
-            pass
-            # Check collisions with food and players
-
-    def update_velocity(self, username, angle, speed):
-        """
-        Return Player instance by username or raise exception.
-        """
-        player = self._players.get(username, None)
-
-        # Change exception 
-        if not player:
-            raise ValueError
-        
-        player.update_velocity(angle, speed)
-    
+            
     def move(self, username, x, y):
         player = self._players.get(username, None)
         if not player:
             raise ValueError
         
         player.move(x, y)
+
+
+    def detect_food_collisions(self, username):
+        """Detects cells being inside the radius of current player.
+        Those cells are eaten.
+        """
+        player = self._players.get(username, None)
+        if not player:
+            raise ValueError
+
+        for key in self._food:
+            f = self._food[key]
+            if(self.getDistance(f.pos[0], f.pos[1], player.pos[0], player.pos[1]) <= player.radius *.75):
+                player.radius+=1.5
+                del self._food[key]
+                print("COLLISION DETECTED! Food: " + key)
+                return
+    
+    def detect_player_collisions(self, username):
+        """Detects cells being inside the radius of current player.
+        Those cells are eaten.
+        """
+        player = self._players.get(username, None)
+        if not player:
+            raise ValueError
+
+        for key in self._players:
+            if key != username:
+                p = self._players[key]
+                if(self.getDistance(p.pos[0], p.pos[1], player.pos[0], player.pos[1]) <= player.radius *.75):
+                    if player.radius < p.radius:
+                        #del self._players[key]
+                        print("COLLISION DETECTED! Player died! Player: " + key)
+                        return False
+        
+        return True
+    
+    def getDistance(self, ax, ay, bx, by):
+        """Calculates Euclidean distance between given points.
+        """
+        diffX = math.fabs(ax-bx)
+        diffY = math.fabs(ay-by)
+        return ((diffX**2)+(diffY**2))**(0.5)
+
     
     def add_player(self, username):
         """TODO: Add checking for username, choosing spawn location, etc."""
@@ -144,7 +144,7 @@ class Model():
 
     def add_food(self, index):
         pos = np.array([random.randint(20, GAME_WINDOW_WIDTH-20), random.randint(20,GAME_WINDOW_HEIGHT-20)])
-        food = Cell(pos, radius = 7, speed = 0, color = "b", direction=0)
+        food = Cell(pos, radius = 7, speed = 0.0, color = "b", direction=0)
         self._food[str(index)] = food
     
     @property

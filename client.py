@@ -3,6 +3,7 @@ import math
 with contextlib.redirect_stdout(None):
     import pygame
 import grpc 
+import sys
 import os
 import logging
 from time import sleep
@@ -16,6 +17,7 @@ address = 'localhost'
 port = 11912
 PLATFORM_WIDTH, PLATFORM_HEIGHT = (1500,800)
 WHITE = (255,255,255)
+BLACK= (0,0,0)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,6 +62,7 @@ class Client():
 
     def get_mouse_position(self):
         return pygame.mouse.get_pos()
+    
 
     def handle_response(self, res):
         """Parse response and update players etc."""
@@ -89,24 +92,9 @@ class Client():
         print(res)
         self.handle_response(res)
         self.redraw_window()
+        alive = True
 
-        # # Continue updating 
-        # while True:
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             exit()
-            
-        #     angle, speed = self.mouse_pos_to_polar()
-        #     mouse_pos = game.PolarVector(angle=angle, length=speed)
-        #     msg = game.PlayerAction(action_type=game.PlayerActionType.MOVE, username=self.username)
-        #     msg.mouse_pos.CopyFrom(mouse_pos)
-        #     print(msg)
-        #     res = self.conn.GameUpdate(msg)
-        #     self.handle_response(res)
-        #     print(res)
-        #     self.redraw_window()
-
-        while True:
+        while alive:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
@@ -115,18 +103,26 @@ class Client():
             msg = game.PlayerAction(x= x, y= y, action_type=game.PlayerActionType.MOVE, username=self.username)
             print(msg)
             res = self.conn.GameUpdate(msg)
-            self.handle_response(res)
-            print(res)
-            self.redraw_window()
+            if res.alive == False:
+                print("YOU DIED!")
+                alive = False
+            else:
+                self.handle_response(res)
+                print(res)
+                self.redraw_window()
 
 
 
 if __name__ == "__main__":
     # make window start in top left hand corner
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0,30)
+    if len(sys.argv) != 2:
+        print("Incorrect usage: Please enter a username as the first argument.")
+    
+    username = sys.argv[1]
 
     # setup pygame window
     WIN = pygame.display.set_mode((PLATFORM_WIDTH, PLATFORM_HEIGHT))
-    pygame.display.set_caption("Agario")
-    c = Client(WIN, "John", PLATFORM_WIDTH, PLATFORM_HEIGHT)
+    pygame.display.set_caption("Agario -- Player: " + username)
+    c = Client(WIN, username, PLATFORM_WIDTH, PLATFORM_HEIGHT)
     c.run()

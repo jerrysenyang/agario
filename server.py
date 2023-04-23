@@ -11,7 +11,7 @@ class Server(rpc.GameServicer):
     def __init__(self):
         self.model = Model()
         
-    def _game_state_to_proto(self):
+    def _game_state_to_proto(self, alive):
         """Convert the game state to game.GameState."""
         msg = game.GameState()
         player_msgs = []
@@ -28,27 +28,28 @@ class Server(rpc.GameServicer):
             food.print_cell()
             food_msgs.append(_cell_to_proto_msg(food))
         msg.food.extend(food_msgs)
+        msg.alive = alive
 
         return msg
     
     def RegisterUser(self, request, context):
         """TODO: Add checking for username, etc."""
         self.model.add_player(request.username)
-        msg = self._game_state_to_proto()
+        msg = self._game_state_to_proto(True)
         print(msg)
         return msg
     
     def GameUpdate(self, request, context):
         """
-        Receive player actions and yield game state.
-        
-        NOTE: `action.mouse_pos` is the polar vector that starts from player center and normalized to game.GAME_WINDOW size. 
+        Receive player actions and yield game state. Updates player position based on the mouse position.
         """
         # Update player velocity
         #self.model.update_velocity(request.username, request.mouse_pos.angle, request.mouse_pos.length)
         # TODO: Add code for emission action
         self.model.move(request.username, request.x, request.y)
-        msg = self._game_state_to_proto()
+        self.model.detect_food_collisions(request.username)
+        alive = self.model.detect_player_collisions(request.username)
+        msg = self._game_state_to_proto(alive)
         print(msg)
         return msg
 
