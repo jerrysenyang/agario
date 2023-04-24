@@ -23,6 +23,7 @@ WHITE = (255,255,255)
 BLACK= (0,0,0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+FPS = 60
 
 logging.basicConfig(level=logging.INFO)
 
@@ -110,6 +111,8 @@ class Client():
 
     def run(self):
 
+        clock = pygame.time.Clock()
+
         # First create user
         msg = game.RegisterRequest(username=self.username)
         res = self.conn.RegisterUser(msg)
@@ -119,6 +122,7 @@ class Client():
         alive = True
 
         while alive:
+            clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()

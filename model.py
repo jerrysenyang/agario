@@ -11,6 +11,7 @@ GAME_WINDOW_WIDTH = 1500
 GAME_WINDOW_HEIGHT = 800
 FOOD_AMOUNT = 100
 INITIAL_SPEED = 5.5
+INITIAL_RADIUS = 10
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
@@ -58,24 +59,53 @@ class Cell():
 
 class Player(Cell):
 
-    def __init__(self, username, pos, radius=10, color= BLACK, speed=INITIAL_SPEED, direction=0):
+    def __init__(self, username, pos, radius=INITIAL_RADIUS, color= BLACK, speed=INITIAL_SPEED, direction=0):
         self.username = username
         super().__init__(pos, radius, color, speed, direction)
     
+    # def move(self, x, y):
+    #     """Updates players current position depending on player's mouse relative position.
+    #     """
+    #     self.speed = INITIAL_SPEED*(10/self.radius)
+    #     rotation = math.atan2(y - float(GAME_WINDOW_HEIGHT)/2, x - float(GAME_WINDOW_WIDTH)/2)
+    #     rotation *= 180/math.pi
+    #     normalized = (90 - math.fabs(rotation))/90
+    #     vx = self.speed*normalized
+    #     vy = 0
+    #     if rotation < 0:
+    #         vy = -self.speed + math.fabs(vx)
+    #     else:
+    #         vy = self.speed - math.fabs(vx)
+    #     tmpX = self.pos[0] + vx
+    #     tmpY = self.pos[1] + vy
+    #     self.pos[0] = tmpX
+    #     self.pos[1] = tmpY
+
+    #     self._clip_to_bounds()
+
     def move(self, x, y):
         """Updates players current position depending on player's mouse relative position.
         """
-        rotation = math.atan2(y - float(GAME_WINDOW_HEIGHT)/2, x - float(GAME_WINDOW_WIDTH)/2)
-        rotation *= 180/math.pi
-        normalized = (90 - math.fabs(rotation))/90
-        vx = self.speed*normalized
-        vy = 0
-        if rotation < 0:
-            vy = -self.speed + math.fabs(vx)
+        radiusDiff = self.radius-INITIAL_RADIUS
+        self.speed = INITIAL_SPEED-(.05*radiusDiff)
+        if self.speed < 2.0:
+            self.speed = 2.0
+        
+        print(f"speed: {self.speed} and radius: {self.radius}")
+        xdist = x- self.pos[0]
+        ydist = y- self.pos[1]
+        distance = math.sqrt(xdist*xdist + ydist*ydist)
+
+        if distance == 0:
+            x_vel = 0
+            y_vel = 0
         else:
-            vy = self.speed - math.fabs(vx)
-        tmpX = self.pos[0] + vx
-        tmpY = self.pos[1] + vy
+            x_vel = self.speed * xdist / distance
+            y_vel = self.speed * ydist / distance
+        
+        
+        tmpX = self.pos[0] + x_vel
+        tmpY = self.pos[1] + y_vel
         self.pos[0] = tmpX
         self.pos[1] = tmpY
 
