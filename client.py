@@ -1,3 +1,8 @@
+"""
+TODO: Set up client to get current primary from view server.
+TODO: If the current connection fails, ask view server for new primary.
+"""
+
 import contextlib
 import math
 with contextlib.redirect_stdout(None):

@@ -1,12 +1,18 @@
-from queue import Queue
+from collections import deque
 import grpc
 import threading
 import time
 import pickle
+import logging 
 
 import proto.replica_pb2 as replica
 import proto.replica_pb2_grpc as rpc
 from server import Server
+
+
+# Logging config
+logging.basicConfig(level=logging.DEBUG,
+                    format='(%(threadName)-9s) %(message)s',)
 
 
 class Node:
@@ -16,34 +22,38 @@ class Node:
         self.port = port
 
 
-class CustomQueue(Queue):
-    """A FIFO queue that will pop an item when max size is reached."""
-    def __init__(self, max_size, *args):
-        super().__init__(args)
-        self.max_size = max_size
+### NOTE: This functionality is implemented in deque already with the maxlen argument.
+# class CustomQueue(deque):
+#     """A FIFO queue that will pop an item when max size is reached."""
+#     def __init__(self, max_size=0, *args):
+#         super().__init__(args)
+#         self.max_size = max_size
 
-    def put(self, item):
-        """Overwrite the put() function to pop the first item if max_size is reached."""
-        if len(self) == self.max_size:
-            self.get() # Pop first element
-        self.put(item)
+#     def append(self, item):
+#         """Overwrite the put() function to pop the first item if max_size is reached."""
+#         if len(self) == self.max_size:
+#             self.popleft() # Pop first element
+#         super().append(item)
 
-    def incr_max_size(self):
-        """Incrementing by 2 so the queue can hold 2*node_count pings."""
-        self.max_size += 2
+#     def incr_max_size(self):
+#         """Incrementing by 2 so the queue can hold 2*node_count pings."""
+#         self.max_size += 2
+
 
 class ViewServer(rpc.ReplicationServicer):
     def __init__(self):
         self.node_id_counter = 0
         self.view_id_counter = 0
         self.nodes = {}
-        self.recent_pings = CustomQueue()
+        self.recent_pings = deque()
         self.nodes_updated = {}
         self.primary_id = None
         self.backup_id = None
 
     def _check_active_connections(self):
         """
+        Check which nodes are alive and set a new primary or backup if either is down.
+
         TODO: Make more efficent and robust.
         TODO: Does this work in the case that the primary and backup
         fail at the same time?
@@ -52,34 +62,56 @@ class ViewServer(rpc.ReplicationServicer):
         for id in self.recent_pings:
             live_nodes.add(id)
 
-        # Check backup ID is in recent pings
-        if self.backup_id not in live_nodes:
+        # Check if backup ID is in recent pings. If not, choose a new 
+        # backup from the active nodes.
+        if self.backup_id and self.backup_id not in live_nodes:
             del self.nodes[self.backup_id]
             self.backup_id = live_nodes.pop()
-            self._handle_view_update()
-        
-        # Check primary
-        if self.primary_id not in live_nodes:
+            logging.info(f"Backup node is down. Setting backup to {self.backup_id}")
+            self.view_id_counter += 1
+
+        # Check if primary ID is in recent pings. If not, set the current
+        # backup to primary and choose a new backup from active nodes.
+        if self.primary_id and self.primary_id not in live_nodes:
             del self.nodes[self.primary_id]
             self.primary_id = self.backup_id
-            self.backup_id = live_nodes.pop()
-            self._handle_view_update()
-    
-    def _handle_view_update(self):
-        self.nodes_updated = {id: False for id in self.nodes.keys()}
+            # Remove the new primary from live_nodes so it isn't considered for
+            # the new backup
+            live_nodes.remove(self.primary_id)
+            self.backup_id = live_nodes.pop() if live_nodes else None
+            logging.info(f"Primary node is down. Setting primary to {self.primary_id} and backup to {self.backup_id}")
+            self.view_id_counter += 1
 
+    def _current_view(self):
+        """Return ViewState instance."""
+        vs = replica.ViewState()
+        vs.view_id = self.view_id_counter
+        if self.primary_id:
+            vs.primary_id = self.primary_id
+        if self.backup_id:
+            vs.backup_id = self.backup_id
+
+        return vs
+    
     def RegisterNode(self, request, context):
         """
         Register the node.
         """
-        id = self.node_id_counter
+        logging.info(f"Registering node with address {request.address} and port {request.port}")
+        id = str(self.node_id_counter)
         node = Node(id, request.address, request.port)
         self.nodes[id] = node
         self.node_id_counter += 1
         self.nodes_updated[id] = True
-        self.recent_pings.incr_max_size()
+        prev_max_length = self.recent_pings.maxlen
+        self.recent_pings = deque(self.recent_pings, maxlen=prev_max_length+2)
 
-        return replica.NodeID(val=self.node_id_counter)
+        if not self.primary_id:
+            self.primary_id = id
+        elif not self.backup_id:
+            self.backup_id = id
+
+        return replica.NodeID(val=id)
 
     def GetNodeAddress(self, request, context):
         node = self.nodes[request.val]
@@ -89,15 +121,12 @@ class ViewServer(rpc.ReplicationServicer):
         ping_id = request.node_id
         self.recent_pings.append(ping_id)
         self._check_active_connections()
-
-        if not self.nodes_updated[ping_id]:
-            msg = replica.ViewState(primary_id=self.primary_id, backup_id=self.backup_id)
-            # Flag that this node has been updated with newest view state
-            self.nodes_updated[ping_id] = True
-            return msg
+        
+        msg = self._current_view()
+        return msg
     
 
-class ServerNode(Server, rpc.PrimaryBackupServicer):
+class ServerNode(Server):
     """TODO: Right now this does not enforce that only the primary processes requests."""
     def __init__(self, view_address, view_port, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -106,7 +135,9 @@ class ServerNode(Server, rpc.PrimaryBackupServicer):
         self.view_conn = rpc.ReplicationStub(channel)
         # Register node with view server
         msg = replica.NodeAddress(address=self.address, port=self.port)
+        print(msg)
         res = self.view_conn.RegisterNode(msg)
+        logging.info("Connected to view server.")
         self.node_id = res.val
         self.last_view_id = None
         self.is_primary = False
@@ -118,7 +149,8 @@ class ServerNode(Server, rpc.PrimaryBackupServicer):
         """TODO: Handle exceptions."""
         # Send a ping every 0.5 seconds
         while True:
-            res = self.view_conn.Heartbeat(self.node_id)
+            msg = replica.PingMessage(node_id=self.node_id)
+            res = self.view_conn.Heartbeat(msg)
             # If the view has changed, update
             if res.view_id != self.last_view_id:
                 if res.primary_id == self.node_id:

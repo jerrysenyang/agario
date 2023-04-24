@@ -6,6 +6,7 @@ service Replication {
     rpc RegisterNode (NodeAddress) returns (NodeID) {}
     rpc GetNodeAddress (NodeID) returns (NodeAddress) {}
     rpc Heartbeat (PingMessage) returns (ViewState) {}
+    rpc GetPrimaryAddress (Empty) returns (NodeAddress) {}
 }
 
 service PrimaryBackup {
@@ -28,9 +29,9 @@ message PingMessage {
 }
 
 message ViewState {
-    string primary_id = 1;
-    string backup_id = 2;
-    string view_id = 3;
+    optional string primary_id = 1;
+    optional string backup_id = 2;
+    int32 view_id = 3;
 }
 
 message StateUpdate {

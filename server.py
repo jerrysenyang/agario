@@ -12,7 +12,9 @@ PORT = config["PORT"]
 
 
 class Server(rpc.GameServicer):
-    def __init__(self):
+    def __init__(self, address, port):
+        self.address = address
+        self.port = port
         self.model = Model()
 
     def _game_state_error(self, alive):
