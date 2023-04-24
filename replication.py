@@ -43,16 +43,17 @@ class Node:
 class ViewServer(rpc.ReplicationServicer):
     def __init__(self):
         self.node_id_counter = 0
-        self.view_id_counter = 0
+        self.view_id = 0
         self.nodes = {}
         self.recent_pings = deque()
-        self.nodes_updated = {}
         self.primary_id = None
         self.backup_id = None
 
     def _check_active_connections(self):
         """
         Check which nodes are alive and set a new primary or backup if either is down.
+        `self.recent_pings` the last (2*number of live nodes) pings, so we can use this
+        to determine which nodes have not pinged in a while.
 
         TODO: Make more efficent and robust.
         TODO: Does this work in the case that the primary and backup
@@ -62,30 +63,46 @@ class ViewServer(rpc.ReplicationServicer):
         for id in self.recent_pings:
             live_nodes.add(id)
 
-        # Check if backup ID is in recent pings. If not, choose a new 
-        # backup from the active nodes.
-        if self.backup_id and self.backup_id not in live_nodes:
-            del self.nodes[self.backup_id]
-            self.backup_id = live_nodes.pop()
-            logging.info(f"Backup node is down. Setting backup to {self.backup_id}")
-            self.view_id_counter += 1
+        # Remove any nodes that have not pinged recently. If the primary or
+        # backup has not pinged, set those fields to None as well.
+        for id in list(self.nodes.keys()):
+            if id not in live_nodes:
+                del self.nodes[id]
+                if id == self.backup_id:
+                    self.backup_id = None
+                if id == self.primary_id:
+                    self.primary_id = None
 
-        # Check if primary ID is in recent pings. If not, set the current
-        # backup to primary and choose a new backup from active nodes.
-        if self.primary_id and self.primary_id not in live_nodes:
-            del self.nodes[self.primary_id]
+        # Change the view if necessary
+        self._update_view(live_nodes)
+        # Reset the size of self.recent_pings
+        self._update_recent_pings_maxlen()
+
+    def _update_view(self, live_nodes):
+        """Update the view."""
+        # If both primary and backup are alive, view stays the same
+        if self.primary_id and self.backup_id:
+            return
+        # If the primary is down, set the backup to primary and choose a new backup
+        elif self.backup_id:
             self.primary_id = self.backup_id
-            # Remove the new primary from live_nodes so it isn't considered for
-            # the new backup
-            live_nodes.remove(self.primary_id)
+            live_nodes.remove(self.backup_id)
             self.backup_id = live_nodes.pop() if live_nodes else None
-            logging.info(f"Primary node is down. Setting primary to {self.primary_id} and backup to {self.backup_id}")
-            self.view_id_counter += 1
+        # If the backup is down, set a new backup
+        elif self.primary_id:
+            self.backup_id = live_nodes.pop() if live_nodes else None
+        # If both are down, try to select two nodes from live_nodes
+        else:
+            self.primary_id = live_nodes.pop() if live_nodes else None
+            self.backup_id = live_nodes.pop() if live_nodes else None
+        
+        # Increment the view ID since it has changed
+        self.view_id += 1
 
     def _current_view(self):
         """Return ViewState instance."""
         vs = replica.ViewState()
-        vs.view_id = self.view_id_counter
+        vs.view_id = self.view_id
         if self.primary_id:
             vs.primary_id = self.primary_id
         if self.backup_id:
@@ -93,6 +110,11 @@ class ViewServer(rpc.ReplicationServicer):
 
         return vs
     
+    def _update_recent_pings_maxlen(self):
+        new_len = len(self.nodes.keys()) * 2
+        # We have to initialize a new `deque()` instance since maxlen cannot be overwritten
+        self.recent_pings = deque(self.recent_pings, maxlen=new_len)
+
     def RegisterNode(self, request, context):
         """
         Register the node.
@@ -103,8 +125,7 @@ class ViewServer(rpc.ReplicationServicer):
         self.nodes[id] = node
         self.node_id_counter += 1
         self.nodes_updated[id] = True
-        prev_max_length = self.recent_pings.maxlen
-        self.recent_pings = deque(self.recent_pings, maxlen=prev_max_length+2)
+        self._update_recent_pings_maxlen()
 
         if not self.primary_id:
             self.primary_id = id

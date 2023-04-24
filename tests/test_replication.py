@@ -19,6 +19,17 @@ def node():
 #     assert queue.pop() == 2
 
 
+def test_deque():
+    # This is just a test that deque works properly for our requirements
+    q = deque([1, 1, 2, 1], maxlen=4)
+    q.append(2)
+    q.append(2)
+    q.append(2)
+    q.append(2)
+    expected = deque([2, 2, 2, 2], maxlen=4)
+
+    compare(q, expected)
+
 def test_vs_current_view_empty():
     vs = ViewServer()
     actual = vs._current_view()
@@ -49,20 +60,23 @@ def test_check_active_connections_no_backup(node):
 
     assert vs.primary_id == "1"
     assert vs.backup_id == None
+    assert vs.recent_pings.maxlen == 2
     compare(expected_nodes_dict, vs.nodes)
 
 
 def test_check_active_connections_new_backup(node):
     vs = ViewServer()
     backup_node = Node("1", "localhost", "5002")
-    vs.nodes = {"0": node, "1": backup_node} 
+    second_backup = Node("2", "localhost", "5003")
+    vs.nodes = {"0": node, "1": backup_node, "2": second_backup} 
     vs.primary_id = "0"
     vs.backup_id = "1"
     # Simulate only backup pinging
-    vs.recent_pings = deque(["1", "1", "1","1"], maxlen=4)
+    vs.recent_pings = deque(["1", "2", "1","2", "2", "1"], maxlen=4)
     vs._check_active_connections()
-    expected_nodes_dict = {"1": backup_node}
+    expected_nodes_dict = {"1": backup_node, "2": second_backup}
 
     assert vs.primary_id == "1"
-    assert vs.backup_id == None
+    assert vs.backup_id == "2"
+    assert vs.recent_pings.maxlen == 4
     compare(expected_nodes_dict, vs.nodes)
