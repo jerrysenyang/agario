@@ -1,0 +1,27 @@
+syntax = "proto3";
+package replica;
+
+
+service Replication {
+    rpc RegisterNode (NodeAddress) returns (NodeID) {}
+    rpc GetNodeAddress (NodeID) returns (NodeAddress) {}
+    rpc HeartbeatStream (PingMessage) returns (stream ViewState) {}
+}
+
+message NodeAddress {
+    string address = 1;
+    string port = 2;
+}
+
+message NodeID {
+    string val = 1;
+}
+
+message PingMessage {
+    string node_id = 1;
+}
+
+message ViewState {
+    string primary_id = 1;
+    string backup_id = 2;
+}

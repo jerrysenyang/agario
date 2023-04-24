@@ -6,6 +6,7 @@ import proto.game_pb2_grpc as rpc
 from config import config
 from model import Model
 
+
 HOST = config["SERVER_HOST"]
 PORT = config["PORT"]
 
@@ -69,10 +70,6 @@ class Server(rpc.GameServicer):
             msg = self._game_state_error(alive)
             print(msg)
             return msg
-
-class ReplicatedServer(Server):
-    """Extends Server with replication (communication between servers)."""
-    pass
 
 
 ####################
