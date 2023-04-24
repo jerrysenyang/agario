@@ -23,16 +23,18 @@ PORT = config["PORT"]
 ADDRESS = config["SERVER_ADDRESS"]
 local_address = "localhost"
 port = 11912
-PLATFORM_WIDTH, PLATFORM_HEIGHT = (1500,800)
+#GAME_WIDTH, GAME_HEIGHT = (3000,1600)
+VIEW_WIDTH, VIEW_HEIGHT = (1500, 800)
 WHITE = (255,255,255)
 BLACK= (0,0,0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+FPS = 60
 
 logging.basicConfig(level=logging.INFO)
 
 class Client():
-    def __init__(self, window, username, height, width):
+    def __init__(self, window, username, width, height):
         self.window = window
         self.username = username
         self.height = height
@@ -50,6 +52,7 @@ class Client():
         # Draw players
         for p in self.players:
             pygame.draw.circle(self.window, p.color, p.pos, p.radius)
+            self.write_name(p.username,p.pos, p.radius)
         for f in self.food:
             pygame.draw.circle(self.window, f.color, f.pos, f.radius)
 
@@ -70,9 +73,9 @@ class Client():
         text1 = font.render('GAME OVER!', True, GREEN, BLUE)
         text2 = font.render('YOU WERE EATEN...', True, GREEN, BLUE)
         textRect1 = text1.get_rect()
-        textRect1.center = (PLATFORM_WIDTH// 2, PLATFORM_HEIGHT // 2 + 100)
+        textRect1.center = (VIEW_WIDTH// 2, VIEW_HEIGHT // 2 + 100)
         textRect2 = text2.get_rect()
-        textRect2.center = (PLATFORM_WIDTH// 2, PLATFORM_HEIGHT // 2 - 100)
+        textRect2.center = (VIEW_WIDTH// 2, VIEW_HEIGHT // 2 - 100)
         
         self.window.blit(text1, textRect1)
         self.window.blit(text2, textRect2)
@@ -86,6 +89,14 @@ class Client():
         text1 = font.render("Player: "+ self.username, True, BLACK, WHITE)
         textRect1 = text1.get_rect()
         textRect1.topleft = (20, 20)
+        self.window.blit(text1, textRect1)
+
+    def write_name(self, username, pos, radius):
+        pygame.font.init()
+        font = pygame.font.Font(None, 25)
+        text1 = font.render(username, True, BLACK, WHITE)
+        textRect1 = text1.get_rect()
+        textRect1.bottomleft = (pos[0] + radius, pos[1] + radius)
         self.window.blit(text1, textRect1)
 
     def get_mouse_position(self):
@@ -115,6 +126,8 @@ class Client():
 
     def run(self):
 
+        clock = pygame.time.Clock()
+
         # First create user
         msg = game.RegisterRequest(username=self.username)
         res = self.conn.RegisterUser(msg)
@@ -124,6 +137,7 @@ class Client():
         alive = True
 
         while alive:
+            clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
@@ -156,7 +170,7 @@ if __name__ == "__main__":
     username = sys.argv[1]
 
     # setup pygame window
-    WIN = pygame.display.set_mode((PLATFORM_WIDTH, PLATFORM_HEIGHT))
+    WIN = pygame.display.set_mode((VIEW_WIDTH, VIEW_HEIGHT))
     pygame.display.set_caption("Agario -- Player: " + username)
-    c = Client(WIN, username, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+    c = Client(WIN, username, VIEW_WIDTH, VIEW_HEIGHT)
     c.run()
