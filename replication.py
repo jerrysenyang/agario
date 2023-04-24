@@ -22,24 +22,6 @@ class Node:
         self.port = port
 
 
-### NOTE: This functionality is implemented in deque already with the maxlen argument.
-# class CustomQueue(deque):
-#     """A FIFO queue that will pop an item when max size is reached."""
-#     def __init__(self, max_size=0, *args):
-#         super().__init__(args)
-#         self.max_size = max_size
-
-#     def append(self, item):
-#         """Overwrite the put() function to pop the first item if max_size is reached."""
-#         if len(self) == self.max_size:
-#             self.popleft() # Pop first element
-#         super().append(item)
-
-#     def incr_max_size(self):
-#         """Incrementing by 2 so the queue can hold 2*node_count pings."""
-#         self.max_size += 2
-
-
 class ViewServer(rpc.ReplicationServicer):
     def __init__(self):
         self.node_id_counter = 0
@@ -59,7 +41,7 @@ class ViewServer(rpc.ReplicationServicer):
         called when there is at least one node sending pings.
         """
         while True:
-            if time.time() - self.last_ping_time > 10:
+            if time.time() - self.last_ping_time > 2:
                 self.recent_pings.clear()
                 self._check_active_connections()
             
@@ -68,10 +50,6 @@ class ViewServer(rpc.ReplicationServicer):
         Check which nodes are alive and set a new primary or backup if either is down.
         `self.recent_pings` the last (2*number of live nodes) pings, so we can use this
         to determine which nodes have not pinged in a while.
-
-        TODO: Make more efficent and robust.
-        TODO: Does this work in the case that the primary and backup
-        fail at the same time?
         """
         live_nodes = set()
         for id in self.recent_pings:
@@ -169,7 +147,6 @@ class ViewServer(rpc.ReplicationServicer):
         return msg
     
     def GetPrimaryAddress(self, request, context):
-        """TODO: Handle case where there is no primary."""
         primary = self.nodes.get(self.primary_id, None)
         if primary:
             msg = replica.NodeAddress()
@@ -210,11 +187,13 @@ class ServerNode(Server):
                 if res.primary_id == self.node_id:
                     self.is_primary = True
                     logging.info("Server has been set to primary.")
-                if res.backup_id == self.node_id:
+                elif res.backup_id == self.node_id:
                     self._assume_backup(res.primary_id)
                     logging.info("Server has been set to backup.")
+                else:
+                    self.is_primary, self.is_backup = False, False
                 self.last_view_id = res.view_id
-            time.sleep(0.5)
+            time.sleep(0.2)
 
     def _listen_for_state_updates(self):
         """TODO: Handle exceptions."""
@@ -240,3 +219,15 @@ class ServerNode(Server):
                 state_pkl = pickle.dumps(self.model)
                 yield replica.StateUpdate(state=state_pkl)
                 time.sleep(0.05)
+
+    def RegisterUser(self, request, context):
+        if self.is_primary:
+            return super().RegisterUser(request, context)
+        else:
+            raise ConnectionError
+    
+    def GameUpdate(self, request, context):
+        if self.is_primary:
+            return super().GameUpdate(request, context)
+        else:
+            raise ConnectionError

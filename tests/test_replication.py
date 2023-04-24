@@ -11,14 +11,6 @@ def node():
     return Node("0", "localhost", "5001")
 
 
-# def test_append_custom_queue():
-#     queue = CustomQueue(max_size=10)
-#     queue.append(2)
-    
-#     assert len(queue) == 1
-#     assert queue.pop() == 2
-
-
 def test_deque():
     # This is just a test that deque works properly for our requirements
     q = deque([1, 1, 2, 1], maxlen=4)

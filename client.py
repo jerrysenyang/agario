@@ -154,8 +154,11 @@ class Client():
                 res = self.conn.GameUpdate(msg)
             except:
                 res = self.view_server.GetPrimaryAddress(replica.Empty())
+                # If there is no primary, exit
+                if not res.address or not res.port:
+                    logging.info("Server is unavailable.")
+                    exit()
                 # Set up connection to primary
-                # TODO: Handle exceptions
                 channel = grpc.insecure_channel(res.address + ":" + res.port)
                 self.conn = rpc.GameStub(channel)
                 logging.info(f"Connected to {res.address}:{res.port}")
