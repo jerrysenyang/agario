@@ -12,9 +12,12 @@ import proto.game_pb2 as game
 import proto.game_pb2_grpc as rpc
 from model import Player
 from model import Cell
+from config import config
 
 address = 'localhost'
 port = 11912
+PORT = config["PORT"]
+ADDRESS = config["SERVER_ADDRESS"]
 PLATFORM_WIDTH, PLATFORM_HEIGHT = (1500,800)
 WHITE = (255,255,255)
 BLACK= (0,0,0)
