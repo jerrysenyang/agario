@@ -3,8 +3,11 @@ import grpc
 
 import proto.game_pb2 as game
 import proto.game_pb2_grpc as rpc
-
+from config import config
 from model import Model
+
+HOST = config["SERVER_HOST"]
+PORT = config["PORT"]
 
 
 class Server(rpc.GameServicer):
@@ -12,7 +15,6 @@ class Server(rpc.GameServicer):
         self.model = Model()
 
     def _game_state_error(self, alive):
-        print("IN ERROR MESSAGE!")
         msg = game.GameState()
         player_msgs = []
         food_msgs = []
@@ -111,6 +113,9 @@ if __name__ == "__main__":
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     rpc.add_GameServicer_to_server(Server(), server)
-    server.add_insecure_port('[::]:' + str(port))
+    #server.add_insecure_port(HOST + ":"+ str(PORT))
+    connectionString = HOST +":" + str(PORT)
+    server.add_insecure_port(connectionString)
+    print("Server listening on " + connectionString)
     server.start()
     server.wait_for_termination()

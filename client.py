@@ -36,7 +36,7 @@ class Client():
         self.players = None
 
         # Set up channel
-        channel = grpc.insecure_channel(ADDRESS + ':' + str(PORT))
+        channel = grpc.insecure_channel("localhost" + ':' + str(PORT))
         self.conn = rpc.GameStub(channel)
 
     def redraw_window(self):
