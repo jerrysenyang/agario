@@ -45,6 +45,7 @@ class Client():
         for f in self.food:
             pygame.draw.circle(self.window, f.color, f.pos, f.radius)
 
+        self.write_username()
         pygame.display.update()
     
     def write_game_over(self):
@@ -70,6 +71,14 @@ class Client():
 
         pygame.display.update()
 
+    
+    def write_username(self):
+        pygame.font.init()
+        font = pygame.font.Font(None, 30)
+        text1 = font.render("Player: "+ self.username, True, BLACK, WHITE)
+        textRect1 = text1.get_rect()
+        textRect1.topleft = (20, 20)
+        self.window.blit(text1, textRect1)
 
     def get_mouse_position(self):
         return pygame.mouse.get_pos()
@@ -115,11 +124,13 @@ class Client():
             msg = game.PlayerAction(x= x, y= y, action_type=game.PlayerActionType.MOVE, username=self.username)
             print(msg)
             res = self.conn.GameUpdate(msg)
+            
+            ## if the player has died, show GAME OVER and exit
             if res.alive == False:
                 print("YOU DIED!")
                 self.write_game_over()
                 alive = False
-                sleep(5)
+                sleep(3)
 
             else:
                 self.handle_response(res)

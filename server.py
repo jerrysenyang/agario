@@ -61,7 +61,7 @@ class Server(rpc.GameServicer):
             self.model.detect_food_collisions(request.username)
             alive = self.model.detect_player_collisions(request.username)
             msg = self._game_state_to_proto(alive)
-            print(msg)
+           # print(msg)
             return msg
         except:
             msg = self._game_state_error(alive)
