@@ -48,7 +48,21 @@ class ViewServer(rpc.ReplicationServicer):
         self.recent_pings = deque()
         self.primary_id = None
         self.backup_id = None
+        self.last_ping_time = time.time()
 
+        threading.Thread(target=self._monitor_overall_status, daemon=True).start()
+
+    def _monitor_overall_status(self):
+        """
+        We need to check the last time the view server was pinged to catch the 
+        case where no nodes are alive, since `check_active_connections` is only
+        called when there is at least one node sending pings.
+        """
+        while True:
+            if time.time() - self.last_ping_time > 10:
+                self.recent_pings.clear()
+                self._check_active_connections()
+            
     def _check_active_connections(self):
         """
         Check which nodes are alive and set a new primary or backup if either is down.
@@ -65,16 +79,19 @@ class ViewServer(rpc.ReplicationServicer):
 
         # Remove any nodes that have not pinged recently. If the primary or
         # backup has not pinged, set those fields to None as well.
+        prev_node_ct = len(self.nodes.keys())
         for id in list(self.nodes.keys()):
             if id not in live_nodes:
+                logging.info(f"Node {id} removed from active connections.")
                 del self.nodes[id]
                 if id == self.backup_id:
                     self.backup_id = None
                 if id == self.primary_id:
                     self.primary_id = None
 
-        # Change the view if necessary
-        self._update_view(live_nodes)
+        # If the number of nodes has changed, see if view needs to be updated
+        if prev_node_ct != len(self.nodes.keys()):
+            self._update_view(live_nodes)
         # Reset the size of self.recent_pings
         self._update_recent_pings_maxlen()
 
@@ -90,6 +107,7 @@ class ViewServer(rpc.ReplicationServicer):
             self.backup_id = live_nodes.pop() if live_nodes else None
         # If the backup is down, set a new backup
         elif self.primary_id:
+            live_nodes.remove(self.primary_id)
             self.backup_id = live_nodes.pop() if live_nodes else None
         # If both are down, try to select two nodes from live_nodes
         else:
@@ -98,6 +116,7 @@ class ViewServer(rpc.ReplicationServicer):
         
         # Increment the view ID since it has changed
         self.view_id += 1
+        logging.info(f"New view {self.view_id}. The primary is now {self.primary_id} and the backup is {self.backup_id}.")
 
     def _current_view(self):
         """Return ViewState instance."""
@@ -124,13 +143,16 @@ class ViewServer(rpc.ReplicationServicer):
         node = Node(id, request.address, request.port)
         self.nodes[id] = node
         self.node_id_counter += 1
-        self.nodes_updated[id] = True
         self._update_recent_pings_maxlen()
 
         if not self.primary_id:
             self.primary_id = id
+            logging.info(f"Setting primary to {id}.")
+            self.view_id += 1
         elif not self.backup_id:
             self.backup_id = id
+            logging.info(f"Setting backup to {id}.")
+            self.view_id += 1
 
         return replica.NodeID(val=id)
 
@@ -141,8 +163,8 @@ class ViewServer(rpc.ReplicationServicer):
     def Heartbeat(self, request, context):
         ping_id = request.node_id
         self.recent_pings.append(ping_id)
+        self.last_ping_time = time.time()
         self._check_active_connections()
-        
         msg = self._current_view()
         return msg
     
