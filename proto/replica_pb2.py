@@ -13,21 +13,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rreplica.proto\x12\x07replica\",\n\x0bNodeAddress\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"\x15\n\x06NodeID\x12\x0b\n\x03val\x18\x01 \x01(\t\"\x1e\n\x0bPingMessage\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"2\n\tViewState\x12\x12\n\nprimary_id\x18\x01 \x01(\t\x12\x11\n\tbackup_id\x18\x02 \x01(\t2\xc2\x01\n\x0bReplication\x12\x37\n\x0cRegisterNode\x12\x14.replica.NodeAddress\x1a\x0f.replica.NodeID\"\x00\x12\x39\n\x0eGetNodeAddress\x12\x0f.replica.NodeID\x1a\x14.replica.NodeAddress\"\x00\x12?\n\x0fHeartbeatStream\x12\x14.replica.PingMessage\x1a\x12.replica.ViewState\"\x00\x30\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rreplica.proto\x12\x07replica\"\x07\n\x05\x45mpty\",\n\x0bNodeAddress\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"\x15\n\x06NodeID\x12\x0b\n\x03val\x18\x01 \x01(\t\"\x1e\n\x0bPingMessage\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"C\n\tViewState\x12\x12\n\nprimary_id\x18\x01 \x01(\t\x12\x11\n\tbackup_id\x18\x02 \x01(\t\x12\x0f\n\x07view_id\x18\x03 \x01(\t\"\x1c\n\x0bStateUpdate\x12\r\n\x05state\x18\x01 \x01(\x0c\x32\xba\x01\n\x0bReplication\x12\x37\n\x0cRegisterNode\x12\x14.replica.NodeAddress\x1a\x0f.replica.NodeID\"\x00\x12\x39\n\x0eGetNodeAddress\x12\x0f.replica.NodeID\x1a\x14.replica.NodeAddress\"\x00\x12\x37\n\tHeartbeat\x12\x14.replica.PingMessage\x1a\x12.replica.ViewState\"\x00\x32N\n\rPrimaryBackup\x12=\n\x11StateUpdateStream\x12\x0e.replica.Empty\x1a\x14.replica.StateUpdate\"\x00\x30\x01\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'replica_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _NODEADDRESS._serialized_start=26
-  _NODEADDRESS._serialized_end=70
-  _NODEID._serialized_start=72
-  _NODEID._serialized_end=93
-  _PINGMESSAGE._serialized_start=95
-  _PINGMESSAGE._serialized_end=125
-  _VIEWSTATE._serialized_start=127
-  _VIEWSTATE._serialized_end=177
-  _REPLICATION._serialized_start=180
-  _REPLICATION._serialized_end=374
+  _EMPTY._serialized_start=26
+  _EMPTY._serialized_end=33
+  _NODEADDRESS._serialized_start=35
+  _NODEADDRESS._serialized_end=79
+  _NODEID._serialized_start=81
+  _NODEID._serialized_end=102
+  _PINGMESSAGE._serialized_start=104
+  _PINGMESSAGE._serialized_end=134
+  _VIEWSTATE._serialized_start=136
+  _VIEWSTATE._serialized_end=203
+  _STATEUPDATE._serialized_start=205
+  _STATEUPDATE._serialized_end=233
+  _REPLICATION._serialized_start=236
+  _REPLICATION._serialized_end=422
+  _PRIMARYBACKUP._serialized_start=424
+  _PRIMARYBACKUP._serialized_end=502
 # @@protoc_insertion_point(module_scope)

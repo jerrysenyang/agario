@@ -5,8 +5,14 @@ package replica;
 service Replication {
     rpc RegisterNode (NodeAddress) returns (NodeID) {}
     rpc GetNodeAddress (NodeID) returns (NodeAddress) {}
-    rpc HeartbeatStream (PingMessage) returns (stream ViewState) {}
+    rpc Heartbeat (PingMessage) returns (ViewState) {}
 }
+
+service PrimaryBackup {
+    rpc StateUpdateStream (Empty) returns (stream StateUpdate) {}
+}
+
+message Empty {}
 
 message NodeAddress {
     string address = 1;
@@ -24,4 +30,9 @@ message PingMessage {
 message ViewState {
     string primary_id = 1;
     string backup_id = 2;
+    string view_id = 3;
+}
+
+message StateUpdate {
+    bytes state = 1;
 }
