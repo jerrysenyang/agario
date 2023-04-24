@@ -29,6 +29,11 @@ class ReplicationStub(object):
                 request_serializer=replica__pb2.PingMessage.SerializeToString,
                 response_deserializer=replica__pb2.ViewState.FromString,
                 )
+        self.GetPrimaryAddress = channel.unary_unary(
+                '/replica.Replication/GetPrimaryAddress',
+                request_serializer=replica__pb2.Empty.SerializeToString,
+                response_deserializer=replica__pb2.NodeAddress.FromString,
+                )
 
 
 class ReplicationServicer(object):
@@ -52,6 +57,12 @@ class ReplicationServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetPrimaryAddress(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ReplicationServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -69,6 +80,11 @@ def add_ReplicationServicer_to_server(servicer, server):
                     servicer.Heartbeat,
                     request_deserializer=replica__pb2.PingMessage.FromString,
                     response_serializer=replica__pb2.ViewState.SerializeToString,
+            ),
+            'GetPrimaryAddress': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPrimaryAddress,
+                    request_deserializer=replica__pb2.Empty.FromString,
+                    response_serializer=replica__pb2.NodeAddress.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -128,6 +144,23 @@ class Replication(object):
         return grpc.experimental.unary_unary(request, target, '/replica.Replication/Heartbeat',
             replica__pb2.PingMessage.SerializeToString,
             replica__pb2.ViewState.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetPrimaryAddress(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/replica.Replication/GetPrimaryAddress',
+            replica__pb2.Empty.SerializeToString,
+            replica__pb2.NodeAddress.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

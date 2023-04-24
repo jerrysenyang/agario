@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rreplica.proto\x12\x07replica\"\x07\n\x05\x45mpty\",\n\x0bNodeAddress\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"\x15\n\x06NodeID\x12\x0b\n\x03val\x18\x01 \x01(\t\"\x1e\n\x0bPingMessage\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"j\n\tViewState\x12\x17\n\nprimary_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x16\n\tbackup_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x0f\n\x07view_id\x18\x03 \x01(\x05\x42\r\n\x0b_primary_idB\x0c\n\n_backup_id\"\x1c\n\x0bStateUpdate\x12\r\n\x05state\x18\x01 \x01(\x0c\x32\xba\x01\n\x0bReplication\x12\x37\n\x0cRegisterNode\x12\x14.replica.NodeAddress\x1a\x0f.replica.NodeID\"\x00\x12\x39\n\x0eGetNodeAddress\x12\x0f.replica.NodeID\x1a\x14.replica.NodeAddress\"\x00\x12\x37\n\tHeartbeat\x12\x14.replica.PingMessage\x1a\x12.replica.ViewState\"\x00\x32N\n\rPrimaryBackup\x12=\n\x11StateUpdateStream\x12\x0e.replica.Empty\x1a\x14.replica.StateUpdate\"\x00\x30\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rreplica.proto\x12\x07replica\"\x07\n\x05\x45mpty\",\n\x0bNodeAddress\x12\x0f\n\x07\x61\x64\x64ress\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"\x15\n\x06NodeID\x12\x0b\n\x03val\x18\x01 \x01(\t\"\x1e\n\x0bPingMessage\x12\x0f\n\x07node_id\x18\x01 \x01(\t\"j\n\tViewState\x12\x17\n\nprimary_id\x18\x01 \x01(\tH\x00\x88\x01\x01\x12\x16\n\tbackup_id\x18\x02 \x01(\tH\x01\x88\x01\x01\x12\x0f\n\x07view_id\x18\x03 \x01(\x05\x42\r\n\x0b_primary_idB\x0c\n\n_backup_id\"\x1c\n\x0bStateUpdate\x12\r\n\x05state\x18\x01 \x01(\x0c\x32\xf7\x01\n\x0bReplication\x12\x37\n\x0cRegisterNode\x12\x14.replica.NodeAddress\x1a\x0f.replica.NodeID\"\x00\x12\x39\n\x0eGetNodeAddress\x12\x0f.replica.NodeID\x1a\x14.replica.NodeAddress\"\x00\x12\x37\n\tHeartbeat\x12\x14.replica.PingMessage\x1a\x12.replica.ViewState\"\x00\x12;\n\x11GetPrimaryAddress\x12\x0e.replica.Empty\x1a\x14.replica.NodeAddress\"\x00\x32N\n\rPrimaryBackup\x12=\n\x11StateUpdateStream\x12\x0e.replica.Empty\x1a\x14.replica.StateUpdate\"\x00\x30\x01\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'replica_pb2', globals())
@@ -33,7 +33,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _STATEUPDATE._serialized_start=244
   _STATEUPDATE._serialized_end=272
   _REPLICATION._serialized_start=275
-  _REPLICATION._serialized_end=461
-  _PRIMARYBACKUP._serialized_start=463
-  _PRIMARYBACKUP._serialized_end=541
+  _REPLICATION._serialized_end=522
+  _PRIMARYBACKUP._serialized_start=524
+  _PRIMARYBACKUP._serialized_end=602
 # @@protoc_insertion_point(module_scope)

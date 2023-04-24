@@ -168,10 +168,21 @@ class ViewServer(rpc.ReplicationServicer):
         msg = self._current_view()
         return msg
     
+    def GetPrimaryAddress(self, request, context):
+        """TODO: Handle case where there is no primary."""
+        primary = self.nodes.get(self.primary_id, None)
+        if primary:
+            msg = replica.NodeAddress()
+            msg.address = primary.address
+            msg.port = primary.port
+            return msg
+        else:
+            return replica.Empty()
+    
 
 class ServerNode(Server):
     """TODO: Right now this does not enforce that only the primary processes requests."""
-    def __init__(self, view_address, view_port, *args, **kwargs):
+    def __init__(self, view_address=None, view_port=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create a connection to the view server
         channel = grpc.insecure_channel(view_address + ':' + str(view_port))
@@ -205,6 +216,7 @@ class ServerNode(Server):
     def _listen_for_state_updates(self):
         """TODO: Handle exceptions."""
         for msg in self.primary_conn.StateUpdateStream(replica.Empty()):
+            logging.info("Recieved message from primary.")
             self.model = pickle.loads(msg.state)
 
     def _assume_backup(self, primary_id):
@@ -224,4 +236,4 @@ class ServerNode(Server):
                 # Pickle the model
                 state_pkl = pickle.dumps(self.model)
                 yield replica.StateUpdate(state=state_pkl)
-                time.sleep(0.1)
+                time.sleep(0.05)

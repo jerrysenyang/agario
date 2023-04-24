@@ -30,6 +30,7 @@ def test_deque():
 
     compare(q, expected)
 
+
 def test_vs_current_view_empty():
     vs = ViewServer()
     actual = vs._current_view()

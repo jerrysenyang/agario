@@ -15,12 +15,14 @@ from time import sleep
 
 import proto.game_pb2 as game
 import proto.game_pb2_grpc as rpc
+import proto.replica_pb2_grpc as replica_rpc
+import proto.replica_pb2 as replica
 from model import Player
 from model import Cell
 from config import config
 
 PORT = config["PORT"]
-ADDRESS = config["SERVER_ADDRESS"]
+ADDRESS = config["SERVER_HOST"]
 local_address = "localhost"
 port = 11912
 #GAME_WIDTH, GAME_HEIGHT = (3000,1600)
@@ -42,9 +44,15 @@ class Client():
         self.food = None
         self.players = None
 
-        # Set up channel
+        # Set up connection to view server
         channel = grpc.insecure_channel("localhost" + ':' + str(PORT))
+        self.view_server = replica_rpc.ReplicationStub(channel)
+        res = self.view_server.GetPrimaryAddress(replica.Empty())
+        # Set up connection to primary
+        # TODO: Handle exceptions
+        channel = grpc.insecure_channel(res.address + ":" + res.port)
         self.conn = rpc.GameStub(channel)
+        logging.info(f"Connected to {res.address}:{res.port}")
 
     def redraw_window(self):
         self.window.fill(WHITE)

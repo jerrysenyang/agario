@@ -12,7 +12,7 @@ PORT = config["PORT"]
 
 
 class Server(rpc.GameServicer):
-    def __init__(self, address, port):
+    def __init__(self, address=None, port=None):
         self.address = address
         self.port = port
         self.model = Model()
