@@ -209,14 +209,17 @@ class ServerNode(Server):
             if res.view_id != self.last_view_id:
                 if res.primary_id == self.node_id:
                     self.is_primary = True
+                    logging.info("Server has been set to primary.")
                 if res.backup_id == self.node_id:
                     self._assume_backup(res.primary_id)
+                    logging.info("Server has been set to backup.")
+                self.last_view_id = res.view_id
             time.sleep(0.5)
 
     def _listen_for_state_updates(self):
         """TODO: Handle exceptions."""
         for msg in self.primary_conn.StateUpdateStream(replica.Empty()):
-            logging.info("Recieved message from primary.")
+            # logging.info("Recieved message from primary.")
             self.model = pickle.loads(msg.state)
 
     def _assume_backup(self, primary_id):
@@ -228,7 +231,7 @@ class ServerNode(Server):
         channel = grpc.insecure_channel(res.address + ":" + res.port)
         self.primary_conn = rpc.PrimaryBackupStub(channel)
         # Start a thread for listening to updates from primary
-        # threading.Thread(target)
+        threading.Thread(target=self._listen_for_state_updates, daemon=True).start()
 
     def StateUpdateStream(self, request, context):
         while True:

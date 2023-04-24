@@ -121,7 +121,6 @@ class Client():
                 player = Player(username=p.username, pos=pos, radius=radius, color=color)
                 tmp.append(player)
             self.players = tmp
-            print(self.players)
 
             food = []
             for f in res.food:
@@ -130,7 +129,6 @@ class Client():
                 fd = Cell(pos=pos, radius=radius, color=color, speed = 0, direction = 0)
                 food.append(fd)
             self.food = food
-            print(self.food)
 
     def run(self):
 
@@ -139,7 +137,6 @@ class Client():
         # First create user
         msg = game.RegisterRequest(username=self.username)
         res = self.conn.RegisterUser(msg)
-        print(res)
         self.handle_response(res)
         self.redraw_window()
         alive = True
@@ -151,21 +148,29 @@ class Client():
                     exit()
             
             x, y = self.get_mouse_position()
-            msg = game.PlayerAction(x= x, y= y, action_type=game.PlayerActionType.MOVE, username=self.username)
-            print(msg)
-            res = self.conn.GameUpdate(msg)
-            
-            ## if the player has died, show GAME OVER and exit
-            if res.alive == False:
-                print("YOU DIED!")
-                self.write_game_over()
-                alive = False
-                sleep(3)
 
+            try:
+                msg = game.PlayerAction(x= x, y= y, action_type=game.PlayerActionType.MOVE, username=self.username)
+                res = self.conn.GameUpdate(msg)
+            except:
+                res = self.view_server.GetPrimaryAddress(replica.Empty())
+                # Set up connection to primary
+                # TODO: Handle exceptions
+                channel = grpc.insecure_channel(res.address + ":" + res.port)
+                self.conn = rpc.GameStub(channel)
+                logging.info(f"Connected to {res.address}:{res.port}")
             else:
-                self.handle_response(res)
-                print(res)
-                self.redraw_window()
+                ## if the player has died, show GAME OVER and exit
+                if res.alive == False:
+                    print("YOU DIED!")
+                    self.write_game_over()
+                    alive = False
+                    sleep(3)
+
+                else:
+                    self.handle_response(res)
+                    print(res)
+                    self.redraw_window()
 
 
 
