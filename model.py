@@ -11,6 +11,10 @@ GAME_WINDOW_WIDTH = 1500
 GAME_WINDOW_HEIGHT = 800
 FOOD_AMOUNT = 100
 INITIAL_SPEED = 5.5
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+GROWTH_FACTOR = 1
 
 
 class Cell():
@@ -53,7 +57,8 @@ class Cell():
 
 
 class Player(Cell):
-    def __init__(self, username, pos, radius=10, color="r", speed=INITIAL_SPEED, direction=0):
+
+    def __init__(self, username, pos, radius=10, color= BLACK, speed=INITIAL_SPEED, direction=0):
         self.username = username
         super().__init__(pos, radius, color, speed, direction)
     
@@ -104,29 +109,36 @@ class Model():
         for key in self._food:
             f = self._food[key]
             if(self.getDistance(f.pos[0], f.pos[1], player.pos[0], player.pos[1]) <= player.radius *.75):
-                player.radius+=1.5
+                player.radius+=GROWTH_FACTOR
                 del self._food[key]
                 print("COLLISION DETECTED! Food: " + key)
+                self.add_food(key)
                 return
     
     def detect_player_collisions(self, username):
         """Detects cells being inside the radius of current player.
         Those cells are eaten.
         """
-        player = self._players.get(username, None)
-        if not player:
-            raise ValueError
 
-        for key in self._players:
-            if key != username:
-                p = self._players[key]
-                if(self.getDistance(p.pos[0], p.pos[1], player.pos[0], player.pos[1]) <= player.radius *.75):
-                    if player.radius < p.radius:
-                        #del self._players[key]
-                        print("COLLISION DETECTED! Player died! Player: " + key)
-                        return False
+        try:
+            player = self._players.get(username, None)
+            if not player:
+                raise ValueError
+
+            for key in self._players:
+                if key != username:
+                    p = self._players[key]
+                    if(self.getDistance(p.pos[0], p.pos[1], player.pos[0], player.pos[1]) <= p.radius *.75):
+                        if player.radius < p.radius:
+                            del self._players[username]
+                            print("COLLISION DETECTED! Player died! Player: " + username)
+                            return False
+            
+            return True
         
-        return True
+        except: 
+            print("Couldn't finish iteration, dictionary changed size.")
+            return True
     
     def getDistance(self, ax, ay, bx, by):
         """Calculates Euclidean distance between given points.
@@ -144,7 +156,7 @@ class Model():
 
     def add_food(self, index):
         pos = np.array([random.randint(20, GAME_WINDOW_WIDTH-20), random.randint(20,GAME_WINDOW_HEIGHT-20)])
-        food = Cell(pos, radius = 7, speed = 0.0, color = "b", direction=0)
+        food = Cell(pos, radius = 7, speed = 0.0, color = random.choice(Cell.CELL_COLORS), direction=0)
         self._food[str(index)] = food
     
     @property

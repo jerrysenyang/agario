@@ -10,6 +10,16 @@ from model import Model
 class Server(rpc.GameServicer):
     def __init__(self):
         self.model = Model()
+
+    def _game_state_error(self, alive):
+        print("IN ERROR MESSAGE!")
+        msg = game.GameState()
+        player_msgs = []
+        food_msgs = []
+        msg.players.extend(player_msgs)
+        msg.food.extend(food_msgs)
+        msg.alive = alive
+        msg.error = True
         
     def _game_state_to_proto(self, alive):
         """Convert the game state to game.GameState."""
@@ -25,10 +35,10 @@ class Server(rpc.GameServicer):
 
         # Add all food cells
         for food in self.model.food:
-            food.print_cell()
             food_msgs.append(_cell_to_proto_msg(food))
         msg.food.extend(food_msgs)
         msg.alive = alive
+        msg.error = False
 
         return msg
     
@@ -46,12 +56,17 @@ class Server(rpc.GameServicer):
         # Update player velocity
         #self.model.update_velocity(request.username, request.mouse_pos.angle, request.mouse_pos.length)
         # TODO: Add code for emission action
-        self.model.move(request.username, request.x, request.y)
-        self.model.detect_food_collisions(request.username)
-        alive = self.model.detect_player_collisions(request.username)
-        msg = self._game_state_to_proto(alive)
-        print(msg)
-        return msg
+        try: 
+            self.model.move(request.username, request.x, request.y)
+            self.model.detect_food_collisions(request.username)
+            alive = self.model.detect_player_collisions(request.username)
+            msg = self._game_state_to_proto(alive)
+            print(msg)
+            return msg
+        except:
+            msg = self._game_state_error(alive)
+            print(msg)
+            return msg
 
 class ReplicatedServer(Server):
     """Extends Server with replication (communication between servers)."""
@@ -77,14 +92,13 @@ def _cell_to_proto_msg(cell):
     """
     Return a game.Cell instance from Cell instance.
     """
-
-    print("In cell to proto!")
     msg = game.Cell()
-    print("the cell is " + str(msg))
     msg.x_pos = int(cell.pos[0])
     msg.y_pos = int(cell.pos[1])
     msg.size = cell.radius
-    msg.color = cell.color
+    msg.r = cell.color[0]
+    msg.g = cell.color[1]
+    msg.b = cell.color[2]
     return msg
 
 

@@ -18,6 +18,8 @@ port = 11912
 PLATFORM_WIDTH, PLATFORM_HEIGHT = (1500,800)
 WHITE = (255,255,255)
 BLACK= (0,0,0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,26 +41,35 @@ class Client():
         
         # Draw players
         for p in self.players:
-            pygame.draw.circle(self.window, (255,0,0), p.pos, p.radius)
+            pygame.draw.circle(self.window, p.color, p.pos, p.radius)
         for f in self.food:
-            pygame.draw.circle(self.window, (0,0,255), f.pos, f.radius)
+            pygame.draw.circle(self.window, f.color, f.pos, f.radius)
 
         pygame.display.update()
+    
+    def write_game_over(self):
+        self.window.fill(WHITE)
         
-    # def mouse_pos_to_polar(self):
-    #     """Convert mouse position to polar vector."""
-    #     x, y = pygame.mouse.get_pos()
-    #     # center offset 
-    #     x -= self.width/2
-    #     y = self.height/2 - y
-    #     # get angle and length(speed) of vector
-    #     angle = math.atan2(y, x)
-    #     speed = math.sqrt(x**2 + y**2)
-    #     # setting radius of speed change zone
-    #     speed_bound = 0.8*min(self.width/2, self.height/2)
-    #     # normalize speed
-    #     speed = 1 if speed >= speed_bound else speed/speed_bound
-    #     return angle, speed
+        # Draw players
+        for p in self.players:
+            pygame.draw.circle(self.window, p.color, p.pos, p.radius)
+        for f in self.food:
+            pygame.draw.circle(self.window, f.color, f.pos, f.radius)
+        
+        pygame.font.init()
+        font = pygame.font.Font(None, 65)
+        text1 = font.render('GAME OVER!', True, GREEN, BLUE)
+        text2 = font.render('YOU WERE EATEN...', True, GREEN, BLUE)
+        textRect1 = text1.get_rect()
+        textRect1.center = (PLATFORM_WIDTH// 2, PLATFORM_HEIGHT // 2 + 100)
+        textRect2 = text2.get_rect()
+        textRect2.center = (PLATFORM_WIDTH// 2, PLATFORM_HEIGHT // 2 - 100)
+        
+        self.window.blit(text1, textRect1)
+        self.window.blit(text2, textRect2)
+
+        pygame.display.update()
+
 
     def get_mouse_position(self):
         return pygame.mouse.get_pos()
@@ -66,23 +77,24 @@ class Client():
 
     def handle_response(self, res):
         """Parse response and update players etc."""
-        tmp = []
-        for p in res.players:
-            pos = (p.cell.x_pos, p.cell.y_pos)
-            radius, color = p.cell.size, p.cell.color
-            player = Player(username=p.username, pos=pos, radius=radius, color=color)
-            tmp.append(player)
-        self.players = tmp
-        print(self.players)
+        if not res.error:
+            tmp = []
+            for p in res.players:
+                pos = (p.cell.x_pos, p.cell.y_pos)
+                radius, color = p.cell.size, (p.cell.r, p.cell.g, p.cell.b)
+                player = Player(username=p.username, pos=pos, radius=radius, color=color)
+                tmp.append(player)
+            self.players = tmp
+            print(self.players)
 
-        food = []
-        for f in res.food:
-            pos = (f.x_pos, f.y_pos)
-            radius, color = f.size, f.color
-            fd = Cell(pos=pos, radius=radius, color=color, speed = 0, direction = 0)
-            food.append(fd)
-        self.food = food
-        print(self.food)
+            food = []
+            for f in res.food:
+                pos = (f.x_pos, f.y_pos)
+                radius, color = f.size, (f.r, f.g, f.b)
+                fd = Cell(pos=pos, radius=radius, color=color, speed = 0, direction = 0)
+                food.append(fd)
+            self.food = food
+            print(self.food)
 
     def run(self):
 
@@ -105,7 +117,10 @@ class Client():
             res = self.conn.GameUpdate(msg)
             if res.alive == False:
                 print("YOU DIED!")
+                self.write_game_over()
                 alive = False
+                sleep(5)
+
             else:
                 self.handle_response(res)
                 print(res)

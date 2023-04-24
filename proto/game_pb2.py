@@ -13,27 +13,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ngame.proto\x12\x04game\"4\n\x06Player\x12\x18\n\x04\x63\x65ll\x18\x01 \x01(\x0b\x32\n.game.Cell\x12\x10\n\x08username\x18\x05 \x01(\t\"A\n\x04\x43\x65ll\x12\r\n\x05x_pos\x18\x01 \x01(\x05\x12\r\n\x05y_pos\x18\x02 \x01(\x05\x12\x0c\n\x04size\x18\x03 \x01(\x02\x12\r\n\x05\x63olor\x18\x04 \x01(\t\"S\n\tGameState\x12\x1d\n\x07players\x18\x01 \x03(\x0b\x32\x0c.game.Player\x12\x18\n\x04\x66ood\x18\x02 \x03(\x0b\x32\n.game.Cell\x12\r\n\x05\x61live\x18\x03 \x01(\x08\"#\n\x0bPolarVector\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\"c\n\x0cPlayerAction\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12+\n\x0b\x61\x63tion_type\x18\x03 \x01(\x0e\x32\x16.game.PlayerActionType\x12\x10\n\x08username\x18\x04 \x01(\t\"#\n\x0fRegisterRequest\x12\x10\n\x08username\x18\x01 \x01(\t*\'\n\x10PlayerActionType\x12\x08\n\x04MOVE\x10\x00\x12\t\n\x05SHOOT\x10\x01\x32u\n\x04Game\x12\x33\n\nGameUpdate\x12\x12.game.PlayerAction\x1a\x0f.game.GameState\"\x00\x12\x38\n\x0cRegisterUser\x12\x15.game.RegisterRequest\x1a\x0f.game.GameState\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ngame.proto\x12\x04game\"4\n\x06Player\x12\x18\n\x04\x63\x65ll\x18\x01 \x01(\x0b\x32\n.game.Cell\x12\x10\n\x08username\x18\x05 \x01(\t\"S\n\x04\x43\x65ll\x12\r\n\x05x_pos\x18\x01 \x01(\x05\x12\r\n\x05y_pos\x18\x02 \x01(\x05\x12\x0c\n\x04size\x18\x03 \x01(\x02\x12\t\n\x01r\x18\x04 \x01(\x05\x12\t\n\x01g\x18\x05 \x01(\x05\x12\t\n\x01\x62\x18\x06 \x01(\x05\"b\n\tGameState\x12\x1d\n\x07players\x18\x01 \x03(\x0b\x32\x0c.game.Player\x12\x18\n\x04\x66ood\x18\x02 \x03(\x0b\x32\n.game.Cell\x12\r\n\x05\x61live\x18\x03 \x01(\x08\x12\r\n\x05\x65rror\x18\x04 \x01(\x08\"#\n\x0bPolarVector\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\"c\n\x0cPlayerAction\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12+\n\x0b\x61\x63tion_type\x18\x03 \x01(\x0e\x32\x16.game.PlayerActionType\x12\x10\n\x08username\x18\x04 \x01(\t\"#\n\x0fRegisterRequest\x12\x10\n\x08username\x18\x01 \x01(\t*\'\n\x10PlayerActionType\x12\x08\n\x04MOVE\x10\x00\x12\t\n\x05SHOOT\x10\x01\x32u\n\x04Game\x12\x33\n\nGameUpdate\x12\x12.game.PlayerAction\x1a\x0f.game.GameState\"\x00\x12\x38\n\x0cRegisterUser\x12\x15.game.RegisterRequest\x1a\x0f.game.GameState\"\x00\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'game_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _PLAYERACTIONTYPE._serialized_start=401
-  _PLAYERACTIONTYPE._serialized_end=440
+  _PLAYERACTIONTYPE._serialized_start=434
+  _PLAYERACTIONTYPE._serialized_end=473
   _PLAYER._serialized_start=20
   _PLAYER._serialized_end=72
   _CELL._serialized_start=74
-  _CELL._serialized_end=139
-  _GAMESTATE._serialized_start=141
-  _GAMESTATE._serialized_end=224
-  _POLARVECTOR._serialized_start=226
-  _POLARVECTOR._serialized_end=261
-  _PLAYERACTION._serialized_start=263
-  _PLAYERACTION._serialized_end=362
-  _REGISTERREQUEST._serialized_start=364
-  _REGISTERREQUEST._serialized_end=399
-  _GAME._serialized_start=442
-  _GAME._serialized_end=559
+  _CELL._serialized_end=157
+  _GAMESTATE._serialized_start=159
+  _GAMESTATE._serialized_end=257
+  _POLARVECTOR._serialized_start=259
+  _POLARVECTOR._serialized_end=294
+  _PLAYERACTION._serialized_start=296
+  _PLAYERACTION._serialized_end=395
+  _REGISTERREQUEST._serialized_start=397
+  _REGISTERREQUEST._serialized_end=432
+  _GAME._serialized_start=475
+  _GAME._serialized_end=592
 # @@protoc_insertion_point(module_scope)
