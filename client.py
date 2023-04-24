@@ -14,10 +14,10 @@ from model import Player
 from model import Cell
 from config import config
 
-address = 'localhost'
-port = 11912
 PORT = config["PORT"]
 ADDRESS = config["SERVER_ADDRESS"]
+local_address = "localhost"
+port = 11912
 PLATFORM_WIDTH, PLATFORM_HEIGHT = (1500,800)
 WHITE = (255,255,255)
 BLACK= (0,0,0)
@@ -36,7 +36,7 @@ class Client():
         self.players = None
 
         # Set up channel
-        channel = grpc.insecure_channel(address + ':' + str(port))
+        channel = grpc.insecure_channel(ADDRESS + ':' + str(PORT))
         self.conn = rpc.GameStub(channel)
 
     def redraw_window(self):
