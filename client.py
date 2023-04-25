@@ -1,22 +1,42 @@
+"""
+TODO: Set up client to get current primary from view server.
+TODO: If the current connection fails, ask view server for new primary.
+"""
+
 import contextlib
 import math
 with contextlib.redirect_stdout(None):
     import pygame
 import grpc 
+import sys
 import os
 import logging
+from time import sleep
 
 import proto.game_pb2 as game
 import proto.game_pb2_grpc as rpc
+import proto.replica_pb2_grpc as replica_rpc
+import proto.replica_pb2 as replica
 from model import Player
+from model import Cell
+from config import config
 
-address = 'localhost'
+PORT = config["PORT"]
+ADDRESS = config["SERVER_ADDRESS"]
+#local_address = "localhost"
 port = 11912
+#GAME_WIDTH, GAME_HEIGHT = (3000,1600)
+VIEW_WIDTH, VIEW_HEIGHT = (1500, 800)
+WHITE = (255,255,255)
+BLACK= (0,0,0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+FPS = 60
 
 logging.basicConfig(level=logging.INFO)
 
 class Client():
-    def __init__(self, window, username, height, width):
+    def __init__(self, window, username, width, height):
         self.window = window
         self.username = username
         self.height = height
@@ -24,81 +44,149 @@ class Client():
         self.food = None
         self.players = None
 
-        # Set up channel
-        channel = grpc.insecure_channel(address + ':' + str(port))
+        # Set up connection to view server
+        channel = grpc.insecure_channel(ADDRESS + ':' + str(PORT))
+        self.view_server = replica_rpc.ReplicationStub(channel)
+        res = self.view_server.GetPrimaryAddress(replica.Empty())
+        # Set up connection to primary
+        # TODO: Handle exceptions
+        channel = grpc.insecure_channel(res.address + ":" + res.port)
         self.conn = rpc.GameStub(channel)
+        logging.info(f"Connected to {res.address}:{res.port}")
 
     def redraw_window(self):
-        self.window.fill((255, 255, 255))
+        self.window.fill(WHITE)
         
-        # TODO: Using this because I don't know what the pygame colors are
-        tmp_color = (37,7,255)
         # Draw players
         for p in self.players:
-            pygame.draw.circle(self.window, tmp_color, p.pos, p.radius)
+            pygame.draw.circle(self.window, p.color, p.pos, p.radius)
+            self.write_name(p.username,p.pos, p.radius)
+        for f in self.food:
+            pygame.draw.circle(self.window, f.color, f.pos, f.radius)
+
+        self.write_username()
+        pygame.display.update()
+    
+    def write_game_over(self):
+        self.window.fill(WHITE)
+        
+        # Draw players
+        for p in self.players:
+            pygame.draw.circle(self.window, p.color, p.pos, p.radius)
+        for f in self.food:
+            pygame.draw.circle(self.window, f.color, f.pos, f.radius)
+        
+        pygame.font.init()
+        font = pygame.font.Font(None, 65)
+        text1 = font.render('GAME OVER!', True, GREEN, BLUE)
+        text2 = font.render('YOU WERE EATEN...', True, GREEN, BLUE)
+        textRect1 = text1.get_rect()
+        textRect1.center = (VIEW_WIDTH// 2, VIEW_HEIGHT // 2 + 100)
+        textRect2 = text2.get_rect()
+        textRect2.center = (VIEW_WIDTH// 2, VIEW_HEIGHT // 2 - 100)
+        
+        self.window.blit(text1, textRect1)
+        self.window.blit(text2, textRect2)
 
         pygame.display.update()
-        
-    def mouse_pos_to_polar(self):
-        """Convert mouse position to polar vector."""
-        x, y = pygame.mouse.get_pos()
-        # center offset 
-        x -= self.width/2
-        y = self.height/2 - y
-        # get angle and length(speed) of vector
-        angle = math.atan2(y, x)
-        speed = math.sqrt(x**2 + y**2)
-        # setting radius of speed change zone
-        speed_bound = 0.8*min(self.width/2, self.height/2)
-        # normalize speed
-        speed = 1 if speed >= speed_bound else speed/speed_bound
-        return angle, speed
+
+    
+    def write_username(self):
+        pygame.font.init()
+        font = pygame.font.Font(None, 30)
+        text1 = font.render("Player: "+ self.username, True, BLACK, WHITE)
+        textRect1 = text1.get_rect()
+        textRect1.topleft = (20, 20)
+        self.window.blit(text1, textRect1)
+
+    def write_name(self, username, pos, radius):
+        pygame.font.init()
+        font = pygame.font.Font(None, 25)
+        text1 = font.render(username, True, BLACK, WHITE)
+        textRect1 = text1.get_rect()
+        textRect1.bottomleft = (pos[0] + radius, pos[1] + radius)
+        self.window.blit(text1, textRect1)
+
+    def get_mouse_position(self):
+        return pygame.mouse.get_pos()
+    
 
     def handle_response(self, res):
         """Parse response and update players etc."""
-        tmp = []
-        for p in res.players:
-            pos = (p.cell.x_pos, p.cell.y_pos)
-            radius, color = p.cell.size, p.cell.color
-            player = Player(username=p.username, pos=pos, radius=radius, color=color)
-            tmp.append(player)
+        if not res.error:
+            tmp = []
+            for p in res.players:
+                pos = (p.cell.x_pos, p.cell.y_pos)
+                radius, color = p.cell.size, (p.cell.r, p.cell.g, p.cell.b)
+                player = Player(username=p.username, pos=pos, radius=radius, color=color)
+                tmp.append(player)
+            self.players = tmp
 
-        self.players = tmp
+            food = []
+            for f in res.food:
+                pos = (f.x_pos, f.y_pos)
+                radius, color = f.size, (f.r, f.g, f.b)
+                fd = Cell(pos=pos, radius=radius, color=color, speed = 0, direction = 0)
+                food.append(fd)
+            self.food = food
 
     def run(self):
+
+        clock = pygame.time.Clock()
 
         # First create user
         msg = game.RegisterRequest(username=self.username)
         res = self.conn.RegisterUser(msg)
         self.handle_response(res)
         self.redraw_window()
+        alive = True
 
-        # Continue updating 
-        while True:
+        while alive:
+            clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
             
-            angle, speed = self.mouse_pos_to_polar()
-            mouse_pos = game.PolarVector(angle=angle, length=speed)
-            msg = game.PlayerAction(action_type=game.PlayerActionType.MOVE, username=self.username)
-            msg.mouse_pos.CopyFrom(mouse_pos)
-            print(msg)
-            res = self.conn.GameUpdate(msg)
-            self.handle_response(res)
-            print(res)
-            self.redraw_window()
+            x, y = self.get_mouse_position()
+
+            try:
+                msg = game.PlayerAction(x= x, y= y, action_type=game.PlayerActionType.MOVE, username=self.username)
+                res = self.conn.GameUpdate(msg)
+            except:
+                res = self.view_server.GetPrimaryAddress(replica.Empty())
+                # If there is no primary, exit
+                if not res.address or not res.port:
+                    logging.info("Server is unavailable.")
+                    exit()
+                # Set up connection to primary
+                channel = grpc.insecure_channel(res.address + ":" + res.port)
+                self.conn = rpc.GameStub(channel)
+                logging.info(f"Connected to {res.address}:{res.port}")
+            else:
+                ## if the player has died, show GAME OVER and exit
+                if res.alive == False:
+                    print("YOU DIED!")
+                    self.write_game_over()
+                    alive = False
+                    sleep(3)
+
+                else:
+                    self.handle_response(res)
+                    print(res)
+                    self.redraw_window()
+
 
 
 if __name__ == "__main__":
     # make window start in top left hand corner
     os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0,30)
-
-    W, H = 1600, 830
+    if len(sys.argv) != 2:
+        print("Incorrect usage: Please enter a username as the first argument.")
+    
+    username = sys.argv[1]
 
     # setup pygame window
-    WIN = pygame.display.set_mode((W,H))
-    pygame.display.set_caption("Blobs")
-    
-    c = Client(WIN, "John", W, H)
+    WIN = pygame.display.set_mode((VIEW_WIDTH, VIEW_HEIGHT))
+    pygame.display.set_caption("Agario -- Player: " + username)
+    c = Client(WIN, username, VIEW_WIDTH, VIEW_HEIGHT)
     c.run()

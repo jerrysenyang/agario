@@ -27,12 +27,16 @@ message Cell {
     int32 x_pos = 1;
     int32 y_pos = 2;
     float size = 3;
-    string color = 4;
+    int32 r = 4;
+    int32 g = 5;
+    int32 b = 6;
 }
 
 message GameState {
     repeated Player players = 1;
     repeated Cell food = 2;
+    bool alive = 3;
+    bool error = 4;
     // TODO: Can add more features
 }
 
@@ -41,8 +45,8 @@ message GameState {
 Client Messages
 ***/
 message PolarVector {
-    float angle = 1;
-    float length = 2;
+    float x = 1;
+    float y = 2;
 }
 
 enum PlayerActionType {
@@ -51,9 +55,10 @@ enum PlayerActionType {
 }
 
 message PlayerAction {
-    PolarVector mouse_pos = 1;
-    PlayerActionType action_type = 2;
-    string username = 3;
+    float x = 1;
+    float y = 2;
+    PlayerActionType action_type = 3;
+    string username = 4;
 }
 
 message RegisterRequest {

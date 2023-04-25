@@ -1,0 +1,43 @@
+syntax = "proto3";
+package replica;
+
+
+service Replication {
+    rpc RegisterNode (NodeAddress) returns (NodeID) {}
+    rpc GetNodeAddress (NodeID) returns (NodeAddress) {}
+    rpc Heartbeat (PingMessage) returns (ViewState) {}
+    rpc GetPrimaryAddress (Empty) returns (NodeAddress) {} /*** Could change the return to `oneof NodeAddress, ErrorResponse` ***/
+}
+
+service PrimaryBackup {
+    rpc StateUpdateStream (Empty) returns (stream StateUpdate) {}
+}
+
+message Empty {}
+
+message NodeAddress {
+    string address = 1;
+    string port = 2;
+}
+
+message ErrorResponse {
+    string res = 1;
+}
+
+message NodeID {
+    string val = 1;
+}
+
+message PingMessage {
+    string node_id = 1;
+}
+
+message ViewState {
+    optional string primary_id = 1;
+    optional string backup_id = 2;
+    int32 view_id = 3;
+}
+
+message StateUpdate {
+    bytes state = 1;
+}
