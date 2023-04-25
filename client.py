@@ -22,8 +22,8 @@ from model import Cell
 from config import config
 
 PORT = config["PORT"]
-ADDRESS = config["SERVER_HOST"]
-local_address = "localhost"
+ADDRESS = config["SERVER_ADDRESS"]
+#local_address = "localhost"
 port = 11912
 #GAME_WIDTH, GAME_HEIGHT = (3000,1600)
 VIEW_WIDTH, VIEW_HEIGHT = (1500, 800)
@@ -45,7 +45,7 @@ class Client():
         self.players = None
 
         # Set up connection to view server
-        channel = grpc.insecure_channel("localhost" + ':' + str(PORT))
+        channel = grpc.insecure_channel(ADDRESS + ':' + str(PORT))
         self.view_server = replica_rpc.ReplicationStub(channel)
         res = self.view_server.GetPrimaryAddress(replica.Empty())
         # Set up connection to primary
