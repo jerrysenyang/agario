@@ -6,7 +6,7 @@ service Replication {
     rpc RegisterNode (NodeAddress) returns (NodeID) {}
     rpc GetNodeAddress (NodeID) returns (NodeAddress) {}
     rpc Heartbeat (PingMessage) returns (ViewState) {}
-    rpc GetPrimaryAddress (Empty) returns (NodeAddress) {}
+    rpc GetPrimaryAddress (Empty) returns (NodeAddress) {} /*** Could change the return to `oneof NodeAddress, ErrorResponse` ***/
 }
 
 service PrimaryBackup {
@@ -18,6 +18,10 @@ message Empty {}
 message NodeAddress {
     string address = 1;
     string port = 2;
+}
+
+message ErrorResponse {
+    string res = 1;
 }
 
 message NodeID {

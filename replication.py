@@ -3,7 +3,7 @@ import grpc
 import threading
 import time
 import pickle
-import logging 
+import logging
 
 import proto.replica_pb2 as replica
 import proto.replica_pb2_grpc as rpc
@@ -44,6 +44,7 @@ class ViewServer(rpc.ReplicationServicer):
             if time.time() - self.last_ping_time > 2:
                 self.recent_pings.clear()
                 self._check_active_connections()
+            time.sleep(2)
             
     def _check_active_connections(self):
         """
@@ -140,6 +141,9 @@ class ViewServer(rpc.ReplicationServicer):
     
     def Heartbeat(self, request, context):
         ping_id = request.node_id
+        if ping_id not in self.nodes:
+            logging.error(f"Received ping id {ping_id} that is not in `self.nodes`")
+            return
         self.recent_pings.append(ping_id)
         self.last_ping_time = time.time()
         self._check_active_connections()
@@ -158,7 +162,6 @@ class ViewServer(rpc.ReplicationServicer):
     
 
 class ServerNode(Server):
-    """TODO: Right now this does not enforce that only the primary processes requests."""
     def __init__(self, view_address=None, view_port=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Create a connection to the view server
@@ -224,10 +227,10 @@ class ServerNode(Server):
         if self.is_primary:
             return super().RegisterUser(request, context)
         else:
-            raise ConnectionError
+            context.abort(grpc.StatusCode.UNAVAILABLE, "Server is not primary.")
     
     def GameUpdate(self, request, context):
         if self.is_primary:
             return super().GameUpdate(request, context)
         else:
-            raise ConnectionError
+            context.abort(grpc.StatusCode.UNAVAILABLE, "Server is not primary.")
