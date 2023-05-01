@@ -21,8 +21,17 @@ To run the servers, first start the view server with `python3 run_view_server.py
 To start the client, ensure that the connection details are correct in the `config.py` file and simply run `python3 client.py [username]` where `username` is your chosen username. To exit the program, simply exit the window. 
 
 ## Testing
+You can run `pytest` or `python3 -m pytest` from any folder to view the output of the unit tests on different aspects of the solution. 
+
+We also ran several manual tests to evaluate proper fault tolerance behavior. These manual tests included:
+1) Set up the system with 3 clients and 3 game servers, then killing the lead server process. Check that all the clients can continue playing the game seamlessly, then kill another game server. 
+2) Set up the system with 1 client. Kill the lead game server server. Have another client join. Kill another game server. Have another client join. Check for smooth game functionality at each step.
+3) Set up the system with 3 clients and 3 game servers. Kill the 1st backup game server. Continue game functionality. Kill the lead server. Ensure that the lead game server responsibility continues through to another backup server. 
+4) Set up the system with 3 clients and 3 game servers. Kill the lead server, kill a backup server, then have the original lead server come back online. Kill the last remaining original game server, ensure that the game continues to work through the newly brought online server. 
 
 ## Limitations
 While this system is n-fault tolerant based on the number of game servers present, it will not survive if the view server crashes. This was a design decision we made based on the 24/7 nature of the game-- it is more important for the complex game logic to be backed up amongst several servers than to protect against the simple operations of the view server going down. Future work would be to extend replication to the view server. 
+
+Furthermore, this game has not been deployed on a web server, so each client must install this code and configurate the system's IP addresses to run the game. 
 
 ## Engineering Notebook
